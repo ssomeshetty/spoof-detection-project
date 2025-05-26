@@ -6,11 +6,10 @@ This project includes a Django backend for detecting face spoofing and a Chrome 
 
 ## 🚀 Setup Instructions
 
-### 1. Install Backend Dependencies
+1. Install Backend Dependencies
 
 Ensure you have Python and pip installed. Then, install required Python packages:
 
-```bash
 pip install -r requirements.txt
 
 2. Run Migrations
