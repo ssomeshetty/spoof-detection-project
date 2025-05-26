@@ -1,0 +1,7 @@
+Django==4.2.7
+django-cors-headers==4.3.1
+tensorflow==2.15.0
+Pillow==10.1.0
+numpy==1.24.3
+opencv-python==4.8.1.78
+djangorestframework==3.14.0
