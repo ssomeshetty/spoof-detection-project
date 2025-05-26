@@ -1,0 +1,19 @@
+/* Styles for content script elements */
+.spoof-detection-indicator {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    box-sizing: border-box !important;
+}
+
+#spoof-detection-active {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.spoof-result-indicator {
+    transition: all 0.3s ease-in-out;
+}
