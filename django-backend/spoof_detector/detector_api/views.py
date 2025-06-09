@@ -21,7 +21,7 @@ class SpoofDetector:
     
     def load_model(self):
         try:
-            model_path = os.path.join(settings.BASE_DIR, 'detector_api', 'ml_models', 'model.keras')
+            model_path = os.path.join(settings.BASE_DIR, 'detector_api', 'ml_models', 'model4.keras')
             self.model = tf.keras.models.load_model(model_path)
             logger.info("Model loaded successfully")
         except Exception as e:
@@ -80,8 +80,8 @@ class SpoofDetector:
             # Ensure correct extraction
             if isinstance(prediction, (list, np.ndarray)) and len(prediction) > 0:
                 confidence = float(prediction[0][0])  # Works for [[0.9987]]
-                threshold = 0.5
-                is_real = confidence < threshold
+                threshold = 0.6
+                is_real = confidence > threshold
 
                 return {
                     "is_real": is_real,
