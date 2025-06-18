@@ -21,7 +21,7 @@ class SpoofDetector:
     
     def load_model(self):
         try:
-            model_path = os.path.join(settings.BASE_DIR, 'detector_api', 'ml_models', 'model4.keras')
+            model_path = os.path.join(settings.BASE_DIR, 'detector_api', 'ml_models', 'model5.keras')
             self.model = tf.keras.models.load_model(model_path)
             logger.info("Model loaded successfully")
         except Exception as e:
@@ -99,33 +99,38 @@ class SpoofDetector:
 
 # Initialize detector
 detector = SpoofDetector()
+    
+from .models import DetectionResult
 
 @csrf_exempt
 @require_http_methods(["POST"])
 def detect_spoof(request):
-    """
-    API endpoint to detect if a person is real or fake/spoof
-    """
     try:
         data = json.loads(request.body)
         image_data = data.get('image')
-        
-        if not image_data:
-            return JsonResponse({'error': 'No image data provided'}, status=400)
-        
-        # Make prediction
+        user_id = data.get('user_id')
+
+        if not image_data or not user_id:
+            return JsonResponse({'error': 'Image or user_id missing'}, status=400)
+
         result = detector.predict(image_data)
+        result['user_id'] = user_id
         print("✅ Received frame from Chrome extension")
-        result = detector.predict(image_data)
         print("🔍 API Response:", result)
-        
+
+        # Save to DB
+        DetectionResult.objects.create(
+            user_id=user_id,
+            confidence=result.get('confidence', 0),
+            is_real=result.get('is_real', False),
+            status=result.get('status', 'unknown')
+        )
+
         return JsonResponse(result)
-        
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+
     except Exception as e:
-        logger.error(f"API error: {str(e)}")
-        return JsonResponse({'error': 'Internal server error'}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
+
 
 @require_http_methods(["GET"])
 def health_check(request):
@@ -137,3 +142,9 @@ def health_check(request):
         'status': 'healthy' if model_loaded else 'unhealthy',
         'model_loaded': model_loaded
     })
+
+@require_http_methods(["GET"])
+def get_results(request):
+    results = DetectionResult.objects.order_by('-timestamp')[:50]
+    data = [r.to_dict() for r in results]
+    return JsonResponse(data, safe=False)

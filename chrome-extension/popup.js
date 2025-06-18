@@ -1,12 +1,45 @@
 let isDetecting = false;
+let participantsData = [];
+let refreshInterval;
 
 document.addEventListener('DOMContentLoaded', function() {
     const toggleBtn = document.getElementById('toggleDetection');
     const clearBtn = document.getElementById('clearResults');
     const saveBtn = document.getElementById('saveSettings');
+    const refreshBtn = document.getElementById('refreshParticipants');
     const statusDiv = document.getElementById('status');
     const backendUrlInput = document.getElementById('backendUrl');
     const lastResultDiv = document.getElementById('lastResult');
+    
+    // Tab switching
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.tab;
+            
+            // Update tab buttons
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            // Update tab content
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.id === `${targetTab}-tab`) {
+                    content.classList.add('active');
+                }
+            });
+            
+            // Start auto-refresh when participants tab is active
+            if (targetTab === 'participants') {
+                startParticipantsRefresh();
+                loadParticipants();
+            } else {
+                stopParticipantsRefresh();
+            }
+        });
+    });
     
     // Load saved settings
     chrome.storage.sync.get(['backendUrl', 'isDetecting'], function(result) {
@@ -88,6 +121,11 @@ document.addEventListener('DOMContentLoaded', function() {
         statusDiv.className = 'status unknown';
         statusDiv.textContent = 'Detection Cleared';
         lastResultDiv.textContent = 'No recent detections';
+        
+        // Clear participants data
+        participantsData = [];
+        updateParticipantsList();
+        updateStats();
     });
     
     // Save settings
@@ -100,6 +138,11 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             updateUI();
         }, 2000);
+    });
+    
+    // Refresh participants
+    refreshBtn.addEventListener('click', function() {
+        loadParticipants();
     });
     
     // Listen for detection results
@@ -156,4 +199,114 @@ document.addEventListener('DOMContentLoaded', function() {
             lastResultDiv.textContent = `Last check: ${new Date().toLocaleTimeString()} - ${result.status}`;
         }
     }
+    
+    // Participants management functions
+    function loadParticipants() {
+        const backendUrl = backendUrlInput.value;
+        
+        fetch(`${backendUrl}/results/`)
+            .then(response => response.json())
+            .then(data => {
+                participantsData = data;
+                updateParticipantsList();
+                updateStats();
+                updateLastUpdated();
+            })
+            .catch(error => {
+                console.error('Error loading participants:', error);
+                document.getElementById('participantsList').innerHTML = 
+                    '<div class="no-participants">Error loading participants data</div>';
+            });
+    }
+    
+    function updateParticipantsList() {
+        const participantsList = document.getElementById('participantsList');
+        
+        if (participantsData.length === 0) {
+            participantsList.innerHTML = '<div class="no-participants">No participants detected yet</div>';
+            return;
+        }
+        
+        // Group by user_id and get latest result for each user
+        const latestResults = {};
+        participantsData.forEach(result => {
+            const userId = result.user_id;
+            if (!latestResults[userId] || new Date(result.timestamp) > new Date(latestResults[userId].timestamp)) {
+                latestResults[userId] = result;
+            }
+        });
+        
+        const participantsHtml = Object.values(latestResults)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .map(participant => {
+                const statusClass = participant.is_real ? 'real' : 'fake';
+                const statusText = participant.is_real ? 'Real' : 'Fake/Spoof';
+                const confidence = (participant.confidence * 100).toFixed(1);
+                const timestamp = new Date(participant.timestamp).toLocaleTimeString();
+                
+                return `
+                    <div class="participant-item">
+                        <div class="participant-status ${statusClass}"></div>
+                        <div class="participant-info">
+                            <div class="participant-id">User: ${participant.user_id.substring(0, 8)}...</div>
+                            <div class="participant-details">${statusText} • Last seen: ${timestamp}</div>
+                        </div>
+                        <div class="participant-confidence" style="color: ${participant.is_real ? '#28a745' : '#dc3545'}">
+                            ${confidence}%
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        
+        participantsList.innerHTML = participantsHtml;
+    }
+    
+    function updateStats() {
+        const totalCount = document.getElementById('totalCount');
+        const realCount = document.getElementById('realCount');
+        const fakeCount = document.getElementById('fakeCount');
+        
+        // Get unique users and their latest status
+        const latestResults = {};
+        participantsData.forEach(result => {
+            const userId = result.user_id;
+            if (!latestResults[userId] || new Date(result.timestamp) > new Date(latestResults[userId].timestamp)) {
+                latestResults[userId] = result;
+            }
+        });
+        
+        const uniqueParticipants = Object.values(latestResults);
+        const realParticipants = uniqueParticipants.filter(p => p.is_real);
+        const fakeParticipants = uniqueParticipants.filter(p => !p.is_real);
+        
+        totalCount.textContent = uniqueParticipants.length;
+        realCount.textContent = realParticipants.length;
+        fakeCount.textContent = fakeParticipants.length;
+    }
+    
+    function updateLastUpdated() {
+        const lastUpdated = document.getElementById('lastUpdated');
+        lastUpdated.textContent = new Date().toLocaleTimeString();
+    }
+    
+    function startParticipantsRefresh() {
+        if (refreshInterval) clearInterval(refreshInterval);
+        refreshInterval = setInterval(() => {
+            if (document.getElementById('participants-tab').classList.contains('active')) {
+                loadParticipants();
+            }
+        }, 5000); // Refresh every 5 seconds
+    }
+    
+    function stopParticipantsRefresh() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+        }
+    }
+    
+    // Clean up on popup close
+    window.addEventListener('beforeunload', () => {
+        stopParticipantsRefresh();
+    });
 });

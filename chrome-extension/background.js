@@ -2,14 +2,14 @@
 console.log('Background script loaded');
 
 chrome.runtime.onInstalled.addListener(() => {
-    console.log('Spoof Detection Extension installed');
-
-    // Initialize default settings
-    chrome.storage.sync.set({
-        backendUrl: 'http://127.0.0.1:8000/api', // Use 127.0.0.1 for consistency
-        isDetecting: false
+    chrome.storage.sync.get(['userId'], (data) => {
+        if (!data.userId) {
+            const newId = crypto.randomUUID();
+            chrome.storage.sync.set({ userId: newId });
+        }
     });
 });
+
 
 // Handle messages between popup and content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
