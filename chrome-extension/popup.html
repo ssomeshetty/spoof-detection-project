@@ -1,231 +1,536 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Spoof Detection</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="bootstrap.bundle.min.js"></script>
+
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --warning-gradient: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            --card-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            --hover-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
         body {
-            width: 400px;
-            padding: 20px;
-            font-family: Arial, sans-serif;
+            width: 360px;
+            height: 600px;
             margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 13px;
+            overflow-x: hidden;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .tabs {
+
+        .extension-container {
+            height: 100vh;
             display: flex;
-            border-bottom: 2px solid #e0e0e0;
-            margin-bottom: 15px;
-        }
-        .tab {
-            flex: 1;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-            background: #f5f5f5;
-            border: none;
-            border-bottom: 3px solid transparent;
-            font-weight: bold;
-        }
-        .tab.active {
-            background: white;
-            border-bottom-color: #007bff;
-            color: #007bff;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .status {
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            text-align: center;
-            font-weight: bold;
-        }
-        .real { background-color: #d4edda; color: #155724; }
-        .fake { background-color: #f8d7da; color: #721c24; }
-        .unknown { background-color: #fff3cd; color: #856404; }
-        .controls {
-            text-align: center;
-            margin-top: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .settings {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #ccc;
-        }
-        input {
-            width: 100%;
-            padding: 5px;
-            margin: 5px 0;
+            flex-direction: column;
+            padding: 12px;
             box-sizing: border-box;
         }
-        .participants-list {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #e0e0e0;
-            border-radius: 5px;
-            margin: 10px 0;
+
+        .header-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 12px;
+            box-shadow: var(--card-shadow);
         }
-        .participant-item {
+
+        .header-section h5 {
+            margin: 0;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-pills {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 25px;
+            padding: 4px;
+            margin-bottom: 12px;
+        }
+
+        .nav-pills .nav-link {
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .nav-pills .nav-link.active {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .content-section {
+            flex: 1;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: var(--card-shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-indicator {
+            text-align: center;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-indicator::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 2s;
+        }
+
+        .status-real {
+            background: var(--success-gradient);
+            color: white;
+            animation: pulse-glow 2s infinite;
+        }
+
+        .status-fake {
+            background: var(--danger-gradient);
+            color: white;
+            animation: pulse-glow 2s infinite;
+        }
+
+        .status-unknown {
+            background: var(--warning-gradient);
+            color: #856404;
+            animation: pulse-glow 2s infinite;
+        }
+
+        .status-real::before { animation: shimmer 3s infinite; }
+        .status-fake::before { animation: shimmer 3s infinite; }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .btn-ext {
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .btn-primary-ext {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .btn-success-ext {
+            background: var(--success-gradient);
+            color: white;
+        }
+
+        .btn-danger-ext {
+            background: var(--danger-gradient);
+            color: white;
+        }
+
+        .btn-ext:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+
+        .form-control-ext {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-control-ext:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.15rem rgba(102, 126, 234, 0.25);
+            outline: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card-ext {
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 10px;
+            padding: 12px 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .stat-card-ext:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .stat-number-ext {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label-ext {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .participants-list-ext {
+            max-height: 250px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+
+        .participant-item-ext {
             display: flex;
             align-items: center;
             padding: 10px;
-            border-bottom: 1px solid #f0f0f0;
-            background: white;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin-bottom: 2px;
         }
-        .participant-item:last-child {
-            border-bottom: none;
+
+        .participant-item-ext:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateX(5px);
         }
-        .participant-status {
+
+        .participant-status-ext {
             width: 12px;
             height: 12px;
             border-radius: 50%;
             margin-right: 10px;
             flex-shrink: 0;
+            animation: pulse 2s infinite;
+            position: relative;
         }
-        .participant-status.real {
-            background-color: #28a745;
+
+        .participant-status-ext::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            border: 2px solid;
+            opacity: 0;
+            animation: ripple 2s infinite;
         }
-        .participant-status.fake {
-            background-color: #dc3545;
+
+        .participant-status-ext.real {
+            background: #28a745;
         }
-        .participant-status.unknown {
-            background-color: #ffc107;
+
+        .participant-status-ext.real::after {
+            border-color: #28a745;
         }
-        .participant-info {
+
+        .participant-status-ext.fake {
+            background: #dc3545;
+        }
+
+        .participant-status-ext.fake::after {
+            border-color: #dc3545;
+        }
+
+        .participant-status-ext.unknown {
+            background: #ffc107;
+        }
+
+        .participant-status-ext.unknown::after {
+            border-color: #ffc107;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes ripple {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        .participant-info-ext {
             flex: 1;
         }
-        .participant-id {
-            font-weight: bold;
+
+        .participant-id-ext {
+            font-weight: 600;
             font-size: 12px;
             color: #333;
+            margin-bottom: 2px;
         }
-        .participant-details {
-            font-size: 11px;
-            color: #666;
-            margin-top: 2px;
-        }
-        .participant-confidence {
-            font-size: 11px;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-        .no-participants {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-style: italic;
-        }
-        .refresh-btn {
-            background-color: #28a745;
-            font-size: 12px;
-            padding: 5px 10px;
-        }
-        .refresh-btn:hover {
-            background-color: #218838;
-        }
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            margin: 10px 0;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 5px;
-        }
-        .stat-item {
-            text-align: center;
-        }
-        .stat-number {
-            font-size: 18px;
-            font-weight: bold;
-            color: #007bff;
-        }
-        .stat-label {
+
+        .participant-details-ext {
             font-size: 10px;
             color: #666;
-            text-transform: uppercase;
+        }
+
+        .confidence-badge-ext {
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .settings-section {
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .settings-title {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .last-result-ext {
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 3px solid #667eea;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .no-participants-ext {
+            text-align: center;
+            padding: 30px 20px;
+            color: #999;
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        .refresh-btn-ext {
+            background: var(--success-gradient);
+            border: none;
+            border-radius: 15px;
+            padding: 6px 12px;
+            font-size: 11px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn-ext:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .footer-info {
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+
+        /* Custom scrollbar for extension */
+        .participants-list-ext::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .participants-list-ext::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+
+        .participants-list-ext::-webkit-scrollbar-thumb {
+            background: var(--primary-gradient);
+            border-radius: 10px;
+        }
+
+        .fade-in-ext {
+            animation: fadeInExt 0.4s ease-in;
+        }
+
+        @keyframes fadeInExt {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h3>Spoof Detection</h3>
-    </div>
-
-    <div class="tabs">
-        <button class="tab active" data-tab="control">Control</button>
-        <button class="tab" data-tab="participants">Participants</button>
-    </div>
-
-    <!-- Control Tab -->
-    <div id="control-tab" class="tab-content active">
-        <div id="status" class="status unknown">
-            Detection Inactive
+    <div class="extension-container">
+        <!-- Header -->
+        <div class="header-section fade-in-ext">
+            <h5><i class="fas fa-shield-alt me-2"></i>Spoof Detection</h5>
         </div>
 
-        <div class="controls">
-            <button id="toggleDetection">Start Detection</button>
-            <button id="clearResults">Clear</button>
-        </div>
+        <!-- Navigation Pills -->
+        <ul class="nav nav-pills nav-fill fade-in-ext" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="control-tab" data-bs-toggle="pill" data-bs-target="#control" type="button" role="tab">
+                    <i class="fas fa-cog me-1"></i>Control
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="participants-tab" data-bs-toggle="pill" data-bs-target="#participants" type="button" role="tab">
+                    <i class="fas fa-users me-1"></i>Participants
+                </button>
+            </li>
+        </ul>
 
-        <div class="settings">
-            <label>Backend URL:</label>
-            <input type="text" id="backendUrl" value="http://localhost:8000/api" placeholder="Backend URL">
-            <button id="saveSettings">Save Settings</button>
-        </div>
+        <!-- Tab Content -->
+        <div class="content-section fade-in-ext">
+            <div class="tab-content" id="mainTabContent">
+                <!-- Control Tab -->
+                <div class="tab-pane fade show active" id="control" role="tabpanel">
+                    <!-- Status -->
+                    <div id="status" class="status-indicator status-unknown">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span>Detection Inactive</span>
+                    </div>
 
-        <div id="lastResult" style="margin-top: 15px; font-size: 12px; color: #666;">
-            No recent detections
-        </div>
-    </div>
+                    <!-- Controls -->
+                    <div class="mb-3">
+                        <button id="toggleDetection" class="btn-ext btn-primary-ext">
+                            <i class="fas fa-play me-2"></i>Start Detection
+                        </button>
+                        <button id="clearResults" class="btn-ext btn-danger-ext">
+                            <i class="fas fa-trash me-2"></i>Clear Results
+                        </button>
+                    </div>
 
-    <!-- Participants Tab -->
-    <div id="participants-tab" class="tab-content">
-        <div class="stats">
-            <div class="stat-item">
-                <div class="stat-number" id="totalCount">0</div>
-                <div class="stat-label">Total</div>
+                    <!-- Settings -->
+                    <div class="settings-section">
+                        <div class="settings-title">
+                            <i class="fas fa-cogs me-2"></i>Settings
+                        </div>
+                        <div class="mb-2">
+                            <label for="backendUrl" class="form-label" style="font-size: 11px; font-weight: 600;">Backend URL:</label>
+                            <input type="text" class="form-control-ext w-100" id="backendUrl" value="http://localhost:8000/api" placeholder="Enter backend URL">
+                        </div>
+                        <button id="saveSettings" class="btn-ext btn-success-ext">
+                            <i class="fas fa-save me-2"></i>Save Settings
+                        </button>
+                    </div>
+
+                    <!-- Last Result -->
+                    <div id="lastResult" class="last-result-ext">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No recent detections
+                    </div>
+                </div>
+
+                <!-- Participants Tab -->
+                <div class="tab-pane fade" id="participants" role="tabpanel">
+                    <!-- Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card-ext">
+                            <div class="stat-number-ext text-primary" id="totalCount">0</div>
+                            <div class="stat-label-ext">Total</div>
+                        </div>
+                        <div class="stat-card-ext">
+                            <div class="stat-number-ext text-success" id="realCount">0</div>
+                            <div class="stat-label-ext">Real</div>
+                        </div>
+                        <div class="stat-card-ext">
+                            <div class="stat-number-ext text-danger" id="fakeCount">0</div>
+                            <div class="stat-label-ext">Fake</div>
+                        </div>
+                    </div>
+
+                    <!-- Participants Header -->
+                    <div class="section-header">
+                        <h6 class="section-title">
+                            <i class="fas fa-users me-2"></i>All Participants
+                        </h6>
+                        <button id="refreshParticipants" class="refresh-btn-ext">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                    </div>
+
+                    <!-- Participants List -->
+                    <div class="participants-list-ext" id="participantsList">
+                        <div class="no-participants-ext">
+                            <i class="fas fa-user-slash fa-lg mb-2 d-block"></i>
+                            No participants detected yet
+                        </div>
+                    </div>
+
+                    <!-- Footer Info -->
+                    <div class="footer-info">
+                        <i class="fas fa-clock me-1"></i>
+                        Last updated: <span id="lastUpdated">Never</span>
+                    </div>
+                </div>
             </div>
-            <div class="stat-item">
-                <div class="stat-number" id="realCount" style="color: #28a745;">0</div>
-                <div class="stat-label">Real</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number" id="fakeCount" style="color: #dc3545;">0</div>
-                <div class="stat-label">Fake</div>
-            </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h4 style="margin: 0;">All Participants</h4>
-            <button id="refreshParticipants" class="refresh-btn">Refresh</button>
-        </div>
-
-        <div class="participants-list" id="participantsList">
-            <div class="no-participants">
-                No participants detected yet
-            </div>
-        </div>
-
-        <div style="font-size: 10px; color: #666; margin-top: 10px; text-align: center;">
-            Last updated: <span id="lastUpdated">Never</span>
         </div>
     </div>
 
