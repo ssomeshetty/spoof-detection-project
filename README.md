@@ -1,60 +1,16 @@
-# Face Spoof Detection Backend with Chrome Extension
+# Spoof Detection Project — Chrome Extension Development
 
-This project includes a Django backend for detecting face spoofing and a Chrome extension frontend for image upload and detection.
+This repository contains the **Chrome extension** and Django backend server for real-time face presentation attack detection (PAD) during virtual meetings. The system captures video frames from browser-based video conferencing apps (like Google Meet, Zoom Web) and performs live spoof detection using a TensorFlow.js model served by the Django backend.
+
+> **Note:** This repo contains only the Chrome extension and backend inference pipeline, **not the ML model training**.
 
 ---
 
-## 🚀 Setup Instructions
+## Project Overview
 
-1. Install Backend Dependencies
+- **Chrome Extension** captures webcam video frames (1 FPS) from video elements.
+- Frames are sent to a Django REST API backend for inference.
+- The backend returns liveness verdicts (`Real` or `Spoof`) which are displayed live in the browser UI overlay.
+- The solution provides real-time, low-latency spoof detection directly in the browser with no extra hardware.
 
-Ensure you have Python and pip installed. Then, install required Python packages:
-
-pip install -r requirements.txt
-
-2. Run Migrations
-
-python manage.py migrate
-
-3. Start the Development Server
-
-python manage.py runserver
-
-🧩 Load the Chrome Extension
-Open Google Chrome.
-
-Navigate to chrome://extensions/.
-
-Enable Developer mode (top-right toggle).
-
-Click "Load unpacked".
-
-Select the chrome-extension folder from this project.
-
-🧪 Test the Backend API
-You can test the face spoof detection API using the following Python script:
-
-
-
-
-## 🧪 Test the Backend API
-
-You can test the face spoof detection API using the following Python script:
-
-```python
-import base64
-import requests
-
-image_path = r"C:\Users\sanga\Downloads\archive\LCC_FASD\LCC_FASD_evaluation\spoof\spoof_944.png"
-
-with open(image_path, "rb") as img_file:
-    encoded_img = base64.b64encode(img_file.read()).decode('utf-8')
-    base64_img = f"data:image/jpeg;base64,{encoded_img}"
-
-api_url = "http://127.0.0.1:8000/api/detect/"
-
-response = requests.post(api_url, json={"image": base64_img})
-
-print("Response:", response.json())
-
-✅ Make sure your Django server is running before executing the script.
+---
